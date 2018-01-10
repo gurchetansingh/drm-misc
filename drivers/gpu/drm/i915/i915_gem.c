@@ -259,7 +259,7 @@ __i915_gem_object_release_shmem(struct drm_i915_gem_object *obj,
 	if (needs_clflush &&
 	    (obj->base.read_domains & I915_GEM_DOMAIN_CPU) == 0 &&
 	    !(obj->cache_coherent & I915_BO_CACHE_COHERENT_FOR_READ))
-		drm_clflush_sg(pages);
+		drm_flush_sg(pages);
 
 	__start_cpu_write(obj);
 }

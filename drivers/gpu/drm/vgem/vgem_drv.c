@@ -325,7 +325,7 @@ static int vgem_prime_pin(struct drm_gem_object *obj)
 	/* Flush the object from the CPU cache so that importers can rely
 	 * on coherent indirect access via the exported dma-address.
 	 */
-	drm_clflush_pages(pages, n_pages);
+	drm_flush_pages(pages, n_pages);
 
 	return 0;
 }

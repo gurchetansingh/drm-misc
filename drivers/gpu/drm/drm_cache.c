@@ -70,7 +70,7 @@ static void drm_cache_flush_clflush(struct page *pages[],
 #endif
 
 /**
- * drm_clflush_pages - Flush dcache lines of a set of pages.
+ * drm_flush_pages - Flush dcache lines of a set of pages.
  * @pages: List of pages to be flushed.
  * @num_pages: Number of pages in the array.
  *
@@ -78,7 +78,7 @@ static void drm_cache_flush_clflush(struct page *pages[],
  * to a page in the array.
  */
 void
-drm_clflush_pages(struct page *pages[], unsigned long num_pages)
+drm_flush_pages(struct page *pages[], unsigned long num_pages)
 {
 
 #if defined(CONFIG_X86)
@@ -109,17 +109,17 @@ drm_clflush_pages(struct page *pages[], unsigned long num_pages)
 	WARN_ON_ONCE(1);
 #endif
 }
-EXPORT_SYMBOL(drm_clflush_pages);
+EXPORT_SYMBOL(drm_flush_pages);
 
 /**
- * drm_clflush_sg - Flush dcache lines pointing to a scather-gather.
+ * drm_flush_sg - Flush dcache lines pointing to a scather-gather.
  * @st: struct sg_table.
  *
  * Flush every data cache line entry that points to an address in the
  * sg.
  */
 void
-drm_clflush_sg(struct sg_table *st)
+drm_flush_sg(struct sg_table *st)
 {
 #if defined(CONFIG_X86)
 	if (static_cpu_has(X86_FEATURE_CLFLUSH)) {
@@ -140,7 +140,7 @@ drm_clflush_sg(struct sg_table *st)
 	WARN_ON_ONCE(1);
 #endif
 }
-EXPORT_SYMBOL(drm_clflush_sg);
+EXPORT_SYMBOL(drm_flush_sg);
 
 /**
  * drm_clflush_virt_range - Flush dcache lines of a region
