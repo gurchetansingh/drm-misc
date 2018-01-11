@@ -112,6 +112,7 @@ static int vgem_gem_fault(struct vm_fault *vmf)
 				break;
 		}
 
+		drm_flush_pages(obj->base.dev->dev, &page, 1);
 	}
 	return ret;
 }
