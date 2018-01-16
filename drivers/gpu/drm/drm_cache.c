@@ -69,6 +69,55 @@ static void drm_cache_flush_clflush(struct page *pages[],
 }
 #endif
 
+#if defined(CONFIG_ARM)
+static void drm_cache_maint_page(struct page *page, unsigned long offset,
+				 size_t size, enum dma_data_direction dir,
+				 void (*op)(const void *, size_t, int))
+{
+	unsigned long pfn;
+	size_t left = size;
+
+	pfn = page_to_pfn(page) + offset / PAGE_SIZE;
+	offset %= PAGE_SIZE;
+
+	/*
+	 * A single sg entry may refer to multiple physically contiguous
+	 * pages.  But we still need to process highmem pages individually.
+	 * If highmem is not configured then the bulk of this loop gets
+	 * optimized out.
+	 */
+	do {
+		size_t len = left;
+		void *vaddr;
+
+		page = pfn_to_page(pfn);
+
+		if (PageHighMem(page)) {
+			if (len + offset > PAGE_SIZE)
+				len = PAGE_SIZE - offset;
+
+			if (cache_is_vipt_nonaliasing()) {
+				vaddr = kmap_atomic(page);
+				op(vaddr + offset, len, dir);
+				kunmap_atomic(vaddr);
+			} else {
+				vaddr = kmap_high_get(page);
+				if (vaddr) {
+					op(vaddr + offset, len, dir);
+					kunmap_high(page);
+				}
+			}
+		} else {
+			vaddr = page_address(page) + offset;
+			op(vaddr, len, dir);
+		}
+		offset = 0;
+		pfn++;
+		left -= len;
+	} while (left);
+}
+#endif
+
 /**
  * drm_flush_pages - Flush dcache lines of a set of pages.
  * @pages: List of pages to be flushed.
@@ -104,6 +153,11 @@ drm_flush_pages(struct page *pages[], unsigned long num_pages)
 				   (unsigned long)page_virtual + PAGE_SIZE);
 		kunmap_atomic(page_virtual);
 	}
+#elif defined(CONFIG_ARM)
+	unsigned long i;
+	for (i = 0; i < num_pages; i++)
+		drm_cache_maint_page(pages[i], 0, PAGE_SIZE, DMA_TO_DEVICE,
+				     dmac_map_area);
 #else
 	pr_err("Architecture has no drm_cache.c support\n");
 	WARN_ON_ONCE(1);
@@ -135,6 +189,11 @@ drm_flush_sg(struct sg_table *st)
 
 	if (wbinvd_on_all_cpus())
 		pr_err("Timed out waiting for cache flush\n");
+#elif defined(CONFIG_ARM)
+	struct sg_page_iter sg_iter;
+	for_each_sg_page(st->sgl, &sg_iter, st->nents, 0)
+		drm_cache_maint_page(sg_page_iter_page(&sg_iter), 0, PAGE_SIZE,
+				     DMA_TO_DEVICE, dmac_map_area);
 #else
 	pr_err("Architecture has no drm_cache.c support\n");
 	WARN_ON_ONCE(1);
