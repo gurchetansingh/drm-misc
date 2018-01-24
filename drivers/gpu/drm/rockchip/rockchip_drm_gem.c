@@ -14,6 +14,7 @@
 
 #include <drm/drm.h>
 #include <drm/drmP.h>
+#include <drm/drm_cache.h>
 #include <drm/drm_gem.h>
 #include <drm/drm_vma_manager.h>
 #include <linux/iommu.h>
@@ -99,15 +100,11 @@ static int rockchip_gem_get_pages(struct rockchip_gem_object *rk_obj)
 	/*
 	 * Fake up the SG table so that dma_sync_sg_for_device() can be used
 	 * to flush the pages associated with it.
-	 *
-	 * TODO: Replace this by drm_flush_sg() once it can be implemented
-	 * without relying on symbols that are not exported.
 	 */
 	for_each_sg(rk_obj->sgt->sgl, s, rk_obj->sgt->nents, i)
 		sg_dma_address(s) = sg_phys(s);
 
-	dma_sync_sg_for_device(drm->dev, rk_obj->sgt->sgl, rk_obj->sgt->nents,
-			       DMA_TO_DEVICE);
+	drm_flush_sg(rk_obj->sgt);
 
 	return 0;
 

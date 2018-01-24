@@ -15,6 +15,7 @@
 
 #include <linux/dma-buf.h>
 #include <linux/iommu.h>
+#include <drm/drm_cache.h>
 #include <drm/tegra_drm.h>
 
 #include "drm.h"
@@ -229,15 +230,11 @@ static int tegra_bo_get_pages(struct drm_device *drm, struct tegra_bo *bo)
 	/*
 	 * Fake up the SG table so that dma_sync_sg_for_device() can be used
 	 * to flush the pages associated with it.
-	 *
-	 * TODO: Replace this by drm_clflash_sg() once it can be implemented
-	 * without relying on symbols that are not exported.
 	 */
 	for_each_sg(bo->sgt->sgl, s, bo->sgt->nents, i)
 		sg_dma_address(s) = sg_phys(s);
 
-	dma_sync_sg_for_device(drm->dev, bo->sgt->sgl, bo->sgt->nents,
-			       DMA_TO_DEVICE);
+	drm_flush_sg(bo->sgt);
 
 	return 0;
 
