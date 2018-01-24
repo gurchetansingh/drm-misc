@@ -158,6 +158,11 @@ drm_flush_pages(struct page *pages[], unsigned long num_pages)
 	for (i = 0; i < num_pages; i++)
 		drm_cache_maint_page(pages[i], 0, PAGE_SIZE, DMA_TO_DEVICE,
 				     dmac_map_area);
+#elif defined(CONFIG_ARM64)
+	unsigned long i;
+	for (i = 0; i < num_pages; i++)
+		__dma_map_area(phys_to_virt(page_to_phys(pages[i])), PAGE_SIZE,
+			       DMA_TO_DEVICE);
 #else
 	pr_err("Architecture has no drm_cache.c support\n");
 	WARN_ON_ONCE(1);
@@ -194,6 +199,12 @@ drm_flush_sg(struct sg_table *st)
 	for_each_sg_page(st->sgl, &sg_iter, st->nents, 0)
 		drm_cache_maint_page(sg_page_iter_page(&sg_iter), 0, PAGE_SIZE,
 				     DMA_TO_DEVICE, dmac_map_area);
+#elif defined(CONFIG_ARM64)
+	int i;
+	struct scatterlist *sg;
+	for_each_sg(st->sgl, sg, st->nents, i)
+		__dma_map_area(phys_to_virt(sg_phys(sg)), sg->length,
+			       DMA_TO_DEVICE);
 #else
 	pr_err("Architecture has no drm_cache.c support\n");
 	WARN_ON_ONCE(1);
